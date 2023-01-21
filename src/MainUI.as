@@ -1,249 +1,77 @@
-[Setting hidden]
-bool WindowOpen = true;
-
-bool ShowAddMapsWindow = false;
-bool ShowNotificationsWindow = false;
-
-// should all be free/instant to load
-UI::Font@ subheadingFont = UI::LoadFont("DroidSans-Bold.ttf", 16);
-UI::Font@ headingFont = UI::LoadFont("DroidSans.ttf", 20);
-UI::Font@ titleFont = UI::LoadFont("DroidSans.ttf", 26);
-
-
-const string PluginIcon = Icons::BuildingO;
-const string MenuTitle = "\\$f83" + PluginIcon + "\\$z " + Meta::ExecutingPlugin().Name;
-
-uint g_NbNotifications = 1;
+const string PluginIcon = Icons::Tags;
+const string MenuTitle = "\\$2dd" + PluginIcon + "\\$z " + Meta::ExecutingPlugin().Name;
 
 /** Render function called every frame intended only for menu items in `UI`.
 */
 void RenderMenu() {
-    // string notifs = g_NbNotifications == 0 ? "" : ("\\$f22(" + g_NbNotifications + ")");
-    if (UI::MenuItem(MenuTitle, "", WindowOpen)) {
-        WindowOpen = !WindowOpen;
-    }
-}
-
-void RenderMainUI() {
-    RenderMapMonitorWindow();
-    RenderAddMapWindow();
-}
-
-void RenderMapMonitorWindow() {
-    if (!WindowOpen) return;
-    vec2 size = vec2(1200, 700);
-    vec2 pos = (vec2(Draw::GetWidth(), Draw::GetHeight()) - size) / 2.;
-    UI::SetNextWindowSize(int(size.x), int(size.y), UI::Cond::FirstUseEver);
-    UI::SetNextWindowPos(int(pos.x), int(pos.y), UI::Cond::FirstUseEver);
-    if (UI::Begin(MenuTitle, WindowOpen)) {
-        UI::BeginDisabled(IsAnyChooserActive());
-        UI::BeginTabBar("rm-tabs", UI::TabBarFlags::AutoSelectNewTabs);
-        for (uint i = 0; i < mainTabs.Length; i++) {
-            mainTabs[i].DrawTab();
+    if (!UserHasPermissions) return;
+    if (UI::BeginMenu(MenuTitle)) {
+        UI::Text("Current Tag: " + g_CurrClubTag);
+        switch (g_State) {
+            case LoadStatus::Uninitialized: {
+                UI::Text("\\$888 --- Starting Up ---");
+                break;
+            }
+            case LoadStatus::LoadingClubs: {
+                UI::Text("\\$888 --- Loading Clubs ---");
+                DrawClubTagMenuList();
+                break;
+            }
+            case LoadStatus::LoadedClubs: {
+                UI::Text("\\$888 --- Click to Set Tag ---");
+                DrawClubTagMenuList();
+                break;
+            }
         }
-        UI::EndTabBar();
-        UI::EndDisabled();
-    }
-    UI::End();
-}
-
-array<Tab@> mainTabs;
-
-void SetUpTabs() {
-    // mainTabs.InsertLast(AboutTab());
-    mainTabs.InsertLast(ClubsTab());
-}
-
-
-
-
-bool IsAnyChooserActive() {
-    return PresetChooser::active
-        || RandomMapsChooser::active
-        || ScriptOptChooser::active
-        || MapChooser::active
-        || PresetSaver::active
-        ;
-}
-
-
-
-
-// class AboutTab : Tab {
-//     AboutTab() {
-//         super(Icons::InfoCircle + " About", false);
-//     }
-
-//     void DrawTab() override {
-//         if (!tabOpen || !S_ShowAboutTab) return;
-//         if (UI::BeginTabItem(tabName, S_ShowAboutTab, TabFlags)) {
-//             DrawTogglePop();
-//             DrawInner();
-//             UI::EndTabItem();
-//         }
-//     }
-
-//     void DrawInner() override {
-//         UI::Markdown("""
-//  # About Map Monitor
-
-//  Map Monitor (MM) will monitor maps for: top times, a player's time/rank, and the number of players.
-//  Data gathered is saved to a database and available for analysis.
-
-//  ## Using MM
-
-//  To use MM, you must add at least 2 things: a map, and a watcher.
-//  Watchers are how you tell MM what data to monitor a map for.
-//  Each watcher applies to exactly one map.
-//  Once a watcher is added, MM will start gathering relevant data for that map.
-
-//  To recieve notifications, you need to set up a notify rules (or just 'rules').
-//  A rule tells MM what events you should be notified about.
-//  For example:
-//  - Your rank decreases (someone beats your time)
-//  - If a player's PB improves
-//  - If a player beats your time (a specific player, or any)
-//  - If someone plays your map (or when thresholds are reached, like 100 players, 1000 players, etc)
-//  - Summary data: like how many people played your maps in the last week
-
-//  Notifications are put in your inbox, and you can browse past notifications, too.
-
-//  ## Feedback, Suggestions, Bugs, etc
-
-//  - [Map Monitor thread on the Openplanet Discord](https://discord.com/channels/276076890714800129/1062289118647824414)
-//  - [Github Repo Issues](https://github.com/XertroV/tm-map-monitor/issues)
-//  - @XertroV on the Openplanet Discord
-
-//         """);
-//     }
-// }
-
-
-class RulesTab : Tab {
-    RulesTab() {
-        super(Icons::Table + " Rules", false);
-    }
-
-    void DrawInner() override {
-        // DrawControlBar();
-        UI::Separator();
-        // DrawMapsTable();
+        UI::EndMenu();
     }
 }
 
 
-class InboxTab : Tab {
-    InboxTab() {
-        super(Icons::Inbox + " Inbox", false);
+void DrawClubTagMenuList() {
+    UI::BeginDisabled(g_State != LoadStatus::LoadedClubs);
+    if (UI::MenuItem("Refresh Clubs", "")) {
+        startnew(LoadClubs);
+        startnew(LoadCurrClubTag);
     }
-
-    void DrawInner() override {
-        // DrawControlBar();
-        UI::Separator();
-        // DrawMapsTable();
-    }
-}
-
-class TopTimesTab : Tab {
-    TopTimesTab() {
-        super(Icons::Trophy + " Top Times", false);
-        icon = Icons::Trophy;
-    }
-
-    void DrawInner() override {
-        // DrawControlBar();
-        UI::Separator();
-        // DrawMapsTable();
+    // if (UI::MenuItem("Tell Menu to Remove Club Tag", "")) {
+    //     MLHook::Queue_Menu_SendCustomEvent("TMNext_ClubStore_Action_RemoveClubTag", {});
+    // }
+    UI::EndDisabled();
+    UI::Separator();
+    for (uint i = 0; i < myClubs.Length; i++) {
+        DrawSetClubMenuItem(myClubs[i]);
     }
 }
 
-class TimesTab : Tab {
-    TimesTab() {
-        super(Icons::ClockO + " Pb Times", false);
-    }
-
-    void DrawInner() override {
-        // DrawControlBar();
-        UI::Separator();
-        // DrawMapsTable();
+void DrawSetClubMenuItem(ClubData@ club) {
+    // prepend tag with fff so that it shows up white if the tag doesn't add other color formatting.
+    if (UI::MenuItem(club.name, "\\$fff" + club.tag, g_CurrClubTag == club.tag)) {
+        startnew(OnClickSetClubTag, club);
     }
 }
 
-class RanksTab : Tab {
-    RanksTab() {
-        super(Icons::ListOl + " Ranks", false);
-    }
-
-    void DrawInner() override {
-        // DrawControlBar();
-        UI::Separator();
-        // DrawMapsTable();
-    }
-}
-
-class NbPlayersTab : Tab {
-    NbPlayersTab() {
-        super(Icons::Users + " Nb Players", false);
-    }
-
-    void DrawInner() override {
-        // DrawControlBar();
-        UI::Separator();
-        // DrawMapsTable();
-    }
-}
-
-
-
-
-
-string m_addMapUid;
-void RenderAddMapWindow() {
-    if (!ShowAddMapsWindow) return;
-    UI::SetNextWindowSize(400, 400, UI::Cond::FirstUseEver);
-    if (UI::Begin("Add Map", ShowAddMapsWindow)) {
-        UI::AlignTextToFramePadding();
-        UI::Text("Search for map:");
-        m_addMapUid = UI::InputText("Map UID", m_addMapUid);
-    }
-    UI::End();
-}
-
-
-vec4 colNotifBtnBg = vec4(0.641f, 0.121f, 0.121f, 1.f);
-vec4 colNotifBtnBgActive = vec4(0.851f, 0.192f, 0.192f, 1.000f);
-vec4 colNotifBtnBgHovered = vec4(0.981f, 0.269f, 0.269f, 1.000f);
-
-void NotificationsCtrlButton(vec2 size) {
-    if (g_NbNotifications == 0) {
-        ControlButton(Icons::Inbox + "##notifs", OnClickShowNotifications, size);
+void OnClickSetClubTag(ref@ r_club) {
+    // todo: LayerCustomEvent(CGameUILayer@ Layer, wstring Type, MwFastBuffer<wstring>& Data)
+    if (!Permissions::JoinClub()) {
+        NotifyError("Cannot set club tag, you lack the right permissions");
         return;
     }
-    UI::PushStyleColor(UI::Col::Button, colNotifBtnBg);
-    UI::PushStyleColor(UI::Col::ButtonActive, colNotifBtnBgActive);
-    UI::PushStyleColor(UI::Col::ButtonHovered, colNotifBtnBgHovered);
-    ControlButton(tostring(g_NbNotifications) + "##notifs", OnClickShowNotifications, size);
-    UI::PopStyleColor(3);
-}
-
-
-void OnClickShowNotifications() {
-    ShowNotificationsWindow = true;
-}
-
-bool ControlButton(const string &in label, CoroutineFunc@ onClick, vec2 size = vec2()) {
-    bool ret = UI::Button(label, size);
-    if (ret) startnew(onClick);
-    UI::SameLine();
-    return ret;
-}
-
-
-
-
-void SubHeading(const string &in text) {
-    UI::PushFont(subheadingFont);
-    UI::AlignTextToFramePadding();
-    UI::Text(text);
-    UI::PopFont();
+    auto club = cast<ClubData>(r_club);
+    if (club is null) {
+        NotifyWarning("on click set club tag got null club.");
+        return;
+    }
+    Notify("Setting club tag to: " + club.tag);
+    auto resp = SetClubTag(club.id);
+    trace("Got json resp: " + Json::Write(resp));
+    // if we unset the tag, call again to set it.
+    if (!resp.HasKey('tag') || string(resp['tag']) == "") {
+        @resp = SetClubTag(club.id);
+    }
+    SetCurrClubTagFromJson(resp);
+    // note: input here seems not to matter -- overridden by `SetClubTag` even tho this is called after.
+    // in any case, we still need to call it tho, this is what updates the tag in the UI without resorting to ML stuff.
+    UserMgr_SetClubTag(string(resp['tag']));
+    Notify("Set club tag to: " + g_CurrClubTag);
 }

@@ -1,8 +1,8 @@
 [meta]
-name     = "Better Room Manager"
+name     = "Club Tag Quick-Changer"
 author   = "XertroV"
 category = "Club"
-version  = "0.1.12"
+version  = "0.1.-1"
 
 [script]
 #__DEFINES__

@@ -1,5 +1,4 @@
 string[]@ GetClubTags(string[]@ wsids) {
-
     MwFastBuffer<wstring> _wsidList = MwFastBuffer<wstring>();
     for (uint i = 0; i < wsids.Length; i++) {
         _wsidList.Add(wstring(wsids[i]));
@@ -114,6 +113,29 @@ void UploadMapToNadeo(const string &in mapUid) {
     auto resp = app.MenuManager.MenuCustom_CurrentManiaApp.DataFileMgr.Map_NadeoServices_Register(userId, mapUid);
     WaitAndClearTaskLater(resp, app.MenuManager.MenuCustom_CurrentManiaApp.DataFileMgr);
     return;
+}
+
+
+
+const string UserMgr_GetClubTag() {
+    auto userMgr = cast<CGameManiaPlanet>(GetApp()).MenuManager.MenuCustom_CurrentManiaApp.UserMgr;
+    auto resp = userMgr.Tag_GetClubTag(userMgr.Users[0].Id);
+    WaitAndClearTaskLater(resp, userMgr);
+    if (resp.HasSucceeded)
+        return resp.Value;
+    warn("GetClubTag failed: " + resp.ErrorCode + ", " + resp.ErrorType + ", " + resp.ErrorDescription);
+    return "";
+}
+
+void UserMgr_SetClubTag(const string &in clubTag) {
+    if (!Permissions::JoinClub()) {
+        NotifyWarning("refusing to set club tag since you lack permissions to join a club.");
+        return;
+    }
+    auto userMgr = cast<CGameManiaPlanet>(GetApp()).MenuManager.MenuCustom_CurrentManiaApp.UserMgr;
+    auto resp = userMgr.Tag_SetClubTag(userMgr.Users[0].Id, clubTag);
+    WaitAndClearTaskLater(resp, userMgr);
+
 }
 
 

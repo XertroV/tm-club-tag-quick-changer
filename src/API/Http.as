@@ -15,7 +15,7 @@ Json::Value@ FetchLiveEndpoint(const string &in route) {
 
 Json::Value@ PostLiveEndpoint(const string &in route, Json::Value@ data) {
     trace("[FetchLiveEndpoint] Requesting: " + route);
-    auto req = NadeoServices::Post("NadeoLiveServices", route, Json::Write(data));
+    auto req = NadeoServices::Post("NadeoLiveServices", route, data is null ? "" : Json::Write(data));
     req.Start();
     while(!req.Finished()) { yield(); }
     return Json::Parse(req.String());
@@ -48,18 +48,6 @@ Json::Value@ CallClubApiPath(const string &in path) {
     AssertGoodPath(path);
     return FetchClubEndpoint(NadeoServices::BaseURLClub() + path);
 }
-
-// Json::Value@ CallMapMonitorApiPath(const string &in path) {
-//     AssertGoodPath(path);
-//     auto token = Auth::GetCachedToken();
-//     auto url = MM_API_ROOT + path;
-//     trace("[CallMapMonitorApiPath] Requesting: " + url);
-//     auto req = PluginGetRequest(MM_API_ROOT + path);
-//     req.Headers['Authorization'] = 'openplanet ' + token;
-//     req.Start();
-//     while(!req.Finished()) { yield(); }
-//     return Json::Parse(req.String());
-// }
 
 // Ensure we aren't calling a bad path
 void AssertGoodPath(string &in path) {
