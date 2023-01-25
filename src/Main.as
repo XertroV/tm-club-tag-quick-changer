@@ -4,7 +4,6 @@ void Main() {
     if (!CheckPermissions()) return;
     AddAudiences();
     await({startnew(LoadClubs), startnew(LoadCurrClubTag)});
-    // MLHook::Queue_SH_SendCustomEvent
 }
 
 bool notifiedPermissionsMissing = false;
