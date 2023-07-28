@@ -94,8 +94,8 @@ void LoadClubs() {
 }
 
 void GetAdditionalClubs() {
-    for (uint page = 2; page <= maxPage; page++) {
-        AddClubsJson(GetMyClubs(100, (page - 1) * 100)['clubList']);
+    for (int page = 2; page <= maxPage; page++) {
+        AddClubsJson(GetMyClubs(100, uint(page - 1) * 100)['clubList']);
     }
 }
 
