@@ -2,7 +2,7 @@
 name     = "Club Tag Quick-Changer"
 author   = "XertroV"
 category = "Club"
-version  = "0.1.5"
+version  = "0.1.6"
 
 [script]
 #__DEFINES__
